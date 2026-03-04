@@ -131,11 +131,16 @@ div[data-baseweb="select"] * {
 # LOAD DATA
 # =========================
 @st.cache_data
+@st.cache_data
 def load_data():
-    return pd.read_excel(Path("data/financial_distress_data.xlsx"))
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    data_path = BASE_DIR / "data" / "financial_distress_data.xlsx"
+
+    df = pd.read_excel(data_path)
+    df["date"] = pd.to_datetime(df["date"])
+    return df
 
 df = load_data()
-df["date"] = pd.to_datetime(df["date"])
 df["year"] = df["date"].dt.year
 
 # =========================
