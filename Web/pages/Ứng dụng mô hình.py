@@ -139,8 +139,10 @@ div[data-testid="stDataFrame"] {
 # =========================
 @st.cache_data
 def load_data():
-    path = Path("data/financial_distress_data.xlsx")
-    df = pd.read_excel(path)
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    data_path = BASE_DIR / "data" / "financial_distress_data.xlsx"
+
+    df = pd.read_excel(data_path)
     df["date"] = pd.to_datetime(df["date"])
     return df
 
