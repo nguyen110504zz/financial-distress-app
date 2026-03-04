@@ -503,6 +503,7 @@ if st.button("Dự đoán nguy cơ"):
         unsafe_allow_html=True
     )
 
+
     # ===== SHAP LOCAL EXPLANATION (FIXED) =====
     st.write("### Yếu tố ảnh hưởng dự đoán")
 
@@ -515,5 +516,68 @@ if st.button("Dự đoán nguy cơ"):
     plt.tight_layout()
     st.pyplot(plt.gcf())
     plt.close()
+    # =========================
+    # INTERPRETATION SECTION
+    # =========================
+    st.markdown("### 📌 Nhận định mô hình")
 
+    interpretation = f"""
+    <div class='card'>
+
+    <p>Mô hình Random Forest ước tính xác suất doanh nghiệp rơi vào tình trạng 
+    <b>kiệt quệ tài chính trong năm tới</b> là <b>{prob:.3f}</b>.</p>
+
+    <p>Theo ngưỡng phân loại:</p>
+    <ul>
+        <li>< 0.30 → Rủi ro thấp</li>
+        <li>0.30 – 0.60 → Cảnh báo trung bình</li>
+        <li>> 0.60 → Nguy cơ cao</li>
+    </ul>
+
+    <p>Với mức xác suất hiện tại, doanh nghiệp thuộc nhóm 
+    <b>{"rủi ro thấp" if prob < 0.3 else "rủi ro trung bình" if prob < 0.6 else "rủi ro cao"}</b>.</p>
+    """
+
+    # ===== Phân tích tài chính dựa trên input =====
+    finance_comment = ""
+
+    if roa < 0:
+        finance_comment += "<li>ROA âm phản ánh hiệu quả sử dụng tài sản kém.</li>"
+    elif roa < 0.02:
+        finance_comment += "<li>ROA ở mức thấp, khả năng sinh lời hạn chế.</li>"
+
+    if de_ratio > 2:
+        finance_comment += "<li>Đòn bẩy tài chính cao làm gia tăng áp lực trả nợ.</li>"
+
+    if current_ratio < 1:
+        finance_comment += "<li>Thanh khoản yếu, có thể gặp khó khăn trong thanh toán ngắn hạn.</li>"
+
+    if finance_comment == "":
+        finance_comment = "<li>Các chỉ số tài chính ở mức tương đối ổn định.</li>"
+
+    interpretation += f"""
+    <p><b>Phân tích nhanh từ các chỉ số tài chính nhập vào:</b></p>
+    <ul>
+    {finance_comment}
+    </ul>
+    """
+
+    # ===== Kết luận đầu tư =====
+    if prob >= 0.6:
+        invest_text = "Nhà đầu tư nên thận trọng cao độ và hạn chế giải ngân."
+    elif prob >= 0.3:
+        invest_text = "Nhà đầu tư nên theo dõi thêm các kỳ báo cáo tài chính tiếp theo."
+    else:
+        invest_text = "Doanh nghiệp đang ở vùng an toàn tương đối, có thể xem xét đầu tư có kiểm soát."
+
+    interpretation += f"""
+    <p><b>Kết luận:</b> {invest_text}</p>
+
+    <p><i>Lưu ý: Xác suất này là kết quả dự báo của mô hình máy học 
+    dựa trên dữ liệu lịch sử và phản ánh rủi ro cho kỳ tài chính kế tiếp (t+1).</i></p>
+
+    </div>
+    """
+
+    st.markdown(interpretation, unsafe_allow_html=True)
 

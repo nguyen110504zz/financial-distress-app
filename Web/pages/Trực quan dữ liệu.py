@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 from pathlib import Path
 
+
 st.set_page_config(layout="wide")
 
 # =========================
@@ -330,16 +331,81 @@ else:
     if latest.current_ratio<1: st.markdown('<div class="alert-box alert-red">Thanh khoản thấp</div>', unsafe_allow_html=True)
     if latest.roa<0: st.markdown('<div class="alert-box alert-red">Doanh nghiệp đang thua lỗ</div>', unsafe_allow_html=True)
 
-    # ===== RECOMMEND =====
+    # ===== RECOMMEND (LOGICALLY CORRECT VERSION) =====
     st.markdown("### 📌 Nhận định đầu tư")
-    avg=history.risk_score.mean()
-    trend=history.risk_score.diff().mean()
 
-    if score<0.3 and trend<=0:
-        rec,cls,msg="NÊN ĐẦU TƯ","safe","Rủi ro thấp và ổn định."
-    elif score<0.6:
-        rec,cls,msg="CÂN NHẮC","warn","Rủi ro trung bình."
+    # ===== LẤY DUY NHẤT 1 NGUỒN DỮ LIỆU =====
+    current_score = float(latest.risk_score)
+    market_avg = float(df[df.year == year]["risk_score"].mean())
+    company_avg = float(history.risk_score.mean())
+
+    leverage = latest.de_ratio
+    liquidity = latest.current_ratio
+    profitability = latest.roa
+
+    # ===== PHÂN LOẠI =====
+    if current_score >= 0.6:
+        recommendation = "KHÔNG NÊN ĐẦU TƯ"
+        cls = "danger"
+    elif current_score >= 0.3:
+        recommendation = "CÂN NHẮC THẬN TRỌNG"
+        cls = "warn"
     else:
-        rec,cls,msg="KHÔNG NÊN ĐẦU TƯ","danger","Rủi ro cao."
+        recommendation = "CÓ THỂ XEM XÉT ĐẦU TƯ"
+        cls = "safe"
 
-    st.markdown(f"<div class='card'><h3 class='{cls}'>{rec}</h3><p>{msg}</p></div>", unsafe_allow_html=True)
+    # ===== PHÂN TÍCH CHÍNH =====
+    analysis_text = f"""
+    <p>Năm {year}, doanh nghiệp có <b>Risk Score = {current_score:.3f}</b>.</p>
+
+    <p>So với trung bình thị trường ({market_avg:.3f}),
+    mức rủi ro hiện tại <b>{"cao hơn" if current_score > market_avg else "thấp hơn"}</b> thị trường.</p>
+
+    <p>So với mức trung bình lịch sử của chính doanh nghiệp ({company_avg:.3f}),
+    rủi ro hiện tại <b>{"đang gia tăng" if current_score > company_avg else "đang cải thiện"}</b>.</p>
+
+    <p><i>Lưu ý: Risk Score năm {year} được tính từ các chỉ số tài chính của năm {year}
+    và phản ánh xác suất rủi ro tài chính cho năm {year + 1}.</i></p>
+    """
+
+    # ===== PHÂN TÍCH BỔ SUNG =====
+    financial_text = "<ul>"
+
+    if leverage > 2:
+        financial_text += "<li>Đòn bẩy tài chính cao (DE Ratio > 2), áp lực nợ lớn.</li>"
+
+    if liquidity < 1:
+        financial_text += "<li>Thanh khoản yếu (Current Ratio < 1), rủi ro thanh toán ngắn hạn.</li>"
+
+    if profitability < 0:
+        financial_text += "<li>Doanh nghiệp đang ghi nhận lợi nhuận âm (ROA < 0).</li>"
+
+    if financial_text == "<ul>":
+        financial_text += "<li>Các chỉ số tài chính ở mức tương đối an toàn.</li>"
+
+    financial_text += "</ul>"
+
+    # ===== KẾT LUẬN =====
+    conclusion_text = f"""
+    <p>Với Risk Score ở mức {current_score:.3f},
+    doanh nghiệp thuộc nhóm rủi ro 
+    <b>{"cao" if current_score >= 0.6 else "trung bình" if current_score >= 0.3 else "thấp"}</b>.</p>
+
+    <p>Nhà đầu tư nên {"hạn chế giải ngân và ưu tiên bảo toàn vốn"
+    if current_score >= 0.6 else
+    "theo dõi sát diễn biến tài chính trong kỳ tới"
+    if current_score >= 0.3 else
+    "có thể xem xét đầu tư với mức phân bổ hợp lý"}.</p>
+    """
+
+    # ===== HIỂN THỊ =====
+    st.markdown(f"""
+    <div class='card'>
+    <h3 class='{cls}'>{recommendation}</h3>
+    {analysis_text}
+    <b>Phân tích tài chính bổ sung:</b>
+    {financial_text}
+    <b>Kết luận:</b>
+    {conclusion_text}
+    </div>
+    """, unsafe_allow_html=True)
